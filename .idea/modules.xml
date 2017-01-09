@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/PimaticJava.iml" filepath="$PROJECT_DIR$/PimaticJava.iml" />
+      <module fileurl="file://$PROJECT_DIR$/pimatic-api/pimatic-api.iml" filepath="$PROJECT_DIR$/pimatic-api/pimatic-api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/pimatic-utils/pimatic-utils.iml" filepath="$PROJECT_DIR$/pimatic-utils/pimatic-utils.iml" />
+    </modules>
+  </component>
+</project>
