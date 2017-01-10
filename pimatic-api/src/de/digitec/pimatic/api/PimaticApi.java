@@ -129,7 +129,6 @@ public class PimaticApi {
 
     private String _request(String method, String path, byte[] body)  {
 
-
         URL url = null;
         try {
             url = new URL(_server + path);
@@ -147,6 +146,11 @@ public class PimaticApi {
         }
         _urlConnection.setDoInput(true);
 
+        if (method.equals("PATCH")) {
+            method = "POST";
+            _urlConnection.setRequestProperty("X-HTTP-Method-Override", "PATCH");
+        }
+
         if (method.equals("POST")) {
             _urlConnection.setDoOutput(true);
             _urlConnection.setFixedLengthStreamingMode(body.length);
@@ -162,6 +166,12 @@ public class PimaticApi {
                 os.write(body);
                 os.close();
             } catch (IOException e) {
+                /**
+                 * Network error: invalid hostname,
+                 * java.net.UnknownHostException (invalid host name)
+                 * java.net.ConnectException
+                 * javax.net.ssl.SSLHandshakeException: https on port 80
+                 */
                 e.printStackTrace();
             }
         }
@@ -169,7 +179,8 @@ public class PimaticApi {
         BufferedInputStream in;
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
-            if (_urlConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+            int responseCode = _urlConnection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
                 in = new BufferedInputStream(_urlConnection.getInputStream());
             } else {
                 in = new BufferedInputStream(_urlConnection.getErrorStream());
@@ -181,6 +192,9 @@ public class PimaticApi {
             }
             in.close();
         } catch (IOException e) {
+            /**
+             * java.net.SocketException: http on on 433
+             */
             e.printStackTrace();
         }
         String response = null;
@@ -189,19 +203,41 @@ public class PimaticApi {
             response = out.toString("UTF-8");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
-        }
-        return _checkResponse(response);
-/*
         } finally {
             if (_urlConnection != null) {
                 _urlConnection.disconnect();
             }
         }
-*/
+        return _checkResponse(response);
     }
 
     public String get(String path) throws Exception {
         return _request("GET", path, null);
+    }
+
+    public String post(String path, HashMap<String , Object> parms) {
+
+        byte[] body = null;
+        String response = null;
+        try {
+            body = PimaticJson.Stringify(parms).getBytes("UTF-8");
+            response =  _request("POST", path, body);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return response;
+    }
+
+    public String patch(String path, HashMap<String , Object> parms) {
+        byte[] body = null;
+        String response = null;
+        try {
+            body = PimaticJson.Stringify(parms).getBytes("UTF-8");
+            response =  _request("PATCH", path, body);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return response;
     }
 
     public String getSessionCookie() {
