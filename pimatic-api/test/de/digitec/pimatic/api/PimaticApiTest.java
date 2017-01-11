@@ -3,7 +3,6 @@ package de.digitec.pimatic.api;
 import de.digitec.pimatic.utils.Debug;
 import de.digitec.pimatic.utils.Secret;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -17,7 +16,7 @@ import static org.junit.Assert.*;
 
 public class PimaticApiTest {
 
-    PimaticApi client = null;
+    Session client = null;
     Secret secret = null;
     String tag = "API";
 
@@ -29,7 +28,7 @@ public class PimaticApiTest {
     @Test
     public void create() throws Exception {
 
-        PimaticApi client = new PimaticApi(
+        Session client = new Session(
                 secret.getServer(),
                 secret.getUsername(),
                 secret.getPassword()
@@ -44,11 +43,11 @@ public class PimaticApiTest {
     @Test
     public void login() throws Exception {
 
-        PimaticApi client = new PimaticApi(secret.getServer());
+        Session client = new Session(secret.getServer());
 
         String response = client.login(secret.getUsername(), secret.getPassword());
         Debug.d(tag, "[login] " + response);
-        assertEquals("Login failed!", PimaticJson.Parse(response).get("success"), true);
+        assertEquals("Login failed!", Json.Parse(response).get("success"), true);
         assertEquals("Invalid client status!",client.authenticated(), true);
 
         response = client.logout();
@@ -63,7 +62,7 @@ public class PimaticApiTest {
     @Test
     public void config() throws Exception {
         String response = null;
-        PimaticApi client = new PimaticApi(secret.getServer(), secret.getUsername(), secret.getPassword());
+        Session client = new Session(secret.getServer(), secret.getUsername(), secret.getPassword());
         // String response = client.login(username, password);
         Boolean authenticated = client.authenticated();
         response = client.get("/api/config");
@@ -73,14 +72,14 @@ public class PimaticApiTest {
     @Test
     public void getVariable() throws Exception {
         String variable = "PimaticApiTest";
-        PimaticApi client = new PimaticApi(secret.getServer(), secret.getUsername(), secret.getPassword());
+        Session client = new Session(secret.getServer(), secret.getUsername(), secret.getPassword());
         String response = client.get("/api/variables/" + variable);
         Debug.d(tag, "[variable] " + response);
     }
 
     @Test
     public void setVariable() throws Exception {
-        PimaticApi client = new PimaticApi(secret.getServer(), secret.getUsername(), secret.getPassword());
+        Session client = new Session(secret.getServer(), secret.getUsername(), secret.getPassword());
         String variable = "PimaticApiTest";
         HashMap<String, Object> parms = new HashMap<>();
         parms.put("type", "value");
@@ -91,7 +90,7 @@ public class PimaticApiTest {
 
     @Test
     public void postRequest() throws Exception {
-        PimaticApi client = new PimaticApi(secret.getServer());
+        Session client = new Session(secret.getServer());
         HashMap<String, Object> parms = new HashMap<>();
         parms.put("username", secret.getUsername());
         parms.put("password", secret.getPassword());

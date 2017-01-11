@@ -27,7 +27,7 @@ import javax.net.ssl.SSLContext;
 import de.digitec.pimatic.utils.Coding;
 
 
-public class PimaticApi {
+public class Session {
 
     private String _server = null;
     private String _username = null;
@@ -38,20 +38,14 @@ public class PimaticApi {
 
     private CookieManager _cookieManager = null;
 
-    private String _authEncoded() {
-        String userPassword = _username + ":" + _password;
-        String encoded = Coding.EncodeBase64(userPassword);
-        return encoded;
-    }
-
-    public PimaticApi(String server, String username, String password) {
+    public Session(String server, String username, String password) {
         _server = server;
         _username = username;
         _password = password;
         _initConnection();
     }
-    public PimaticApi(String server) { this(server, "admin", "admin"); }
-    public PimaticApi() { this("http://localhost:8080" ); }
+    public Session(String server) { this(server, "admin", "admin"); }
+    public Session() { this("http://localhost:8080" ); }
 
     private void _initConnection() {
         _cookieManager = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
@@ -84,7 +78,7 @@ public class PimaticApi {
         byte[] body = null;
         String response = null;
         try {
-            body = PimaticJson.Stringify(parms).getBytes("UTF-8");
+            body = Json.Stringify(parms).getBytes("UTF-8");
             response =  _request("POST", "/login", body);
         } catch (Exception e) {
             e.printStackTrace();
@@ -98,7 +92,6 @@ public class PimaticApi {
             response = get("/logout");
         } catch (Exception e) {
             e.printStackTrace();
-
         }
         return response;
     }
@@ -107,7 +100,7 @@ public class PimaticApi {
         try {
             if (_urlConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                 if (response.startsWith("{")) {
-                    HashMap<String, Object> json = PimaticJson.Parse(response);
+                    HashMap<String, Object> json = Json.Parse(response);
                     if (json.containsKey("success")) {
                         if ((Boolean) json.get("success") == true) {
                             return response;
@@ -220,7 +213,7 @@ public class PimaticApi {
         byte[] body = null;
         String response = null;
         try {
-            body = PimaticJson.Stringify(parms).getBytes("UTF-8");
+            body = Json.Stringify(parms).getBytes("UTF-8");
             response =  _request("POST", path, body);
         } catch (Exception e) {
             e.printStackTrace();
@@ -232,7 +225,7 @@ public class PimaticApi {
         byte[] body = null;
         String response = null;
         try {
-            body = PimaticJson.Stringify(parms).getBytes("UTF-8");
+            body = Json.Stringify(parms).getBytes("UTF-8");
             response =  _request("PATCH", path, body);
         } catch (Exception e) {
             e.printStackTrace();
@@ -248,6 +241,12 @@ public class PimaticApi {
             }
         }
         return null;
+    }
+
+    private String _authEncoded() {
+        String userPassword = _username + ":" + _password;
+        String encoded = Coding.EncodeBase64(userPassword);
+        return encoded;
     }
 
     public Boolean authenticated() {

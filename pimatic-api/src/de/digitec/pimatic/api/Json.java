@@ -11,7 +11,7 @@ import org.json.JSONObject;
 import java.util.*;
 
 
-public class PimaticJson {
+public class Json {
 
     public static Object toJSON(Object object) throws JSONException {
 
