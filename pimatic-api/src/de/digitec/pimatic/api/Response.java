@@ -1,12 +1,10 @@
 package de.digitec.pimatic.api;
 
-import com.sun.istack.internal.Nullable;
 import org.json.JSONObject;
+import org.json.JSONException;
 
-import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
-import java.lang.*;
-import java.net.HttpURLConnection;
+import java.lang.Exception;
 import java.net.URLConnection;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +69,7 @@ public class Response {
 
     public String getString(String charsetName) throws UnsupportedEncodingException {
         if (_contentString == null) {
-            // TODO: check content typr from header field
+            // TODO: check content type from header field
             _contentString = new String(content, charsetName);
         }
         return _contentString;
@@ -81,14 +79,14 @@ public class Response {
         return getString("UTF-8");
     }
 
-    public JSONObject getJson() throws UnsupportedEncodingException {
+    public JSONObject getJson() throws UnsupportedEncodingException, JSONException {
         if ( _contentJson == null) {
             _contentJson = new JSONObject(getString());
         }
         return _contentJson;
     }
 
-    public Boolean success() throws UnsupportedEncodingException {
+    public Boolean success() throws UnsupportedEncodingException, JSONException {
         if (getJson().has("success")) {
             return _contentJson.getBoolean("success");
         }
