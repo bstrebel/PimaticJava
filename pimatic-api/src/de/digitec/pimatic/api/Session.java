@@ -19,7 +19,10 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
+import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -38,18 +41,16 @@ public class Session {
 
     private CookieManager _cookieManager = null;
 
-    public Session(String server, String username, String password) {
+    public Session(String server, String username, String password) throws Exception {
         _server = server;
         _username = username;
         _password = password;
         _initConnection();
     }
-    public Session(String server) { this(server, "admin", "admin"); }
-    public Session() { this("http://localhost:8080" ); }
+    public Session(String server) throws Exception { this(server, "admin", "admin"); }
+    public Session() throws Exception { this("http://localhost:8080" ); }
 
-    private void _initConnection() {
-        _cookieManager = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
-        CookieHandler.setDefault(_cookieManager);
+    private void _initConnection() throws Exception {
         try {
             URL url = new URL(_server);
             if (url.getProtocol() == "https") {
@@ -57,81 +58,58 @@ public class Session {
                 HttpsURLConnection.setDefaultSSLSocketFactory(_sslContext.getSocketFactory());
                 _sslContext.init(null, null, new java.security.SecureRandom());
             }
-        } catch (Exception e) {
+        } catch (MalformedURLException e) {
+            throw new Exception(e, "InitConnection: MalformedURLException");
+            // e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            throw new Exception(e, "InitConnection: MalformedURLException");
+            // e.printStackTrace();
+        } catch (KeyManagementException e) {
             e.printStackTrace();
         }
+        _cookieManager = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
+        CookieHandler.setDefault(_cookieManager);
     }
 
     public String getUrl() {
         return _server;
     }
 
-    public String login(String username, String password) {
+    public Response login(String username, String password) throws Exception {
         _username = username;
         _password = password;
         return login();
     }
-    public String login() {
+    public Response login() throws Exception {
         HashMap<String, Object> parms = new HashMap<>();
         parms.put("username", _username);
         parms.put("password", _password);
         byte[] body = null;
-        String response = null;
         try {
             body = Json.Stringify(parms).getBytes("UTF-8");
-            response =  _request("POST", "/login", body);
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (java.io.UnsupportedEncodingException e) {
+            throw new Exception(e, e.getMessage());
         }
-        return response;
+        return  _request("POST", "/login", body);
     }
 
-    public String logout() {
-        String response = null;
-        try {
-            response = get("/logout");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return response;
+    public Response logout() throws Exception {
+        return get("/logout");
     }
 
-    private String _checkResponse(String response) {
-        try {
-            if (_urlConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                if (response.startsWith("{")) {
-                    HashMap<String, Object> json = Json.Parse(response);
-                    if (json.containsKey("success")) {
-                        if ((Boolean) json.get("success") == true) {
-                            return response;
-                        }
-                    }
-                }
-            } else {
+    private Response _request(String method, String path, byte[] body) throws Exception {
 
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return response;
-    }
-
-    private String _request(String method, String path, byte[] body)  {
-
+        Response response = null;
         URL url = null;
         try {
             url = new URL(_server + path);
         } catch (MalformedURLException e) {
-            e.printStackTrace();
+            throw new Exception(e,_server + path);
         }
         try {
             _urlConnection = (HttpURLConnection) url.openConnection();
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new Exception(e, url.getHost());
         }
 
         if (!authenticated() && !path.equals("/login")) {
@@ -151,7 +129,7 @@ public class Session {
             try {
                 _urlConnection.setRequestMethod("POST");
             } catch (ProtocolException e) {
-                e.printStackTrace();
+                throw new Exception(e, e.getMessage());
             }
             OutputStream os = null;
             try {
@@ -165,10 +143,9 @@ public class Session {
                  * java.net.ConnectException
                  * javax.net.ssl.SSLHandshakeException: https on port 80
                  */
-                e.printStackTrace();
+                throw new Exception(e, e.getMessage());
             }
         }
-
         BufferedInputStream in;
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
@@ -184,53 +161,50 @@ public class Session {
                 out.write(buffer, 0, len);
             }
             in.close();
+            response = new Response(
+
+                    _urlConnection.getResponseCode(),
+                    _urlConnection.getResponseMessage(),
+                    _urlConnection.getHeaderFields(),
+                    out.toByteArray()
+            );
+            out.close();
         } catch (IOException e) {
             /**
              * java.net.SocketException: http on on 433
              */
-            e.printStackTrace();
-        }
-        String response = null;
-        try {
-            // response = out.toByteArray();
-            response = out.toString("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            throw new Exception(e, e.getMessage());
         } finally {
             if (_urlConnection != null) {
                 _urlConnection.disconnect();
             }
         }
-        return _checkResponse(response);
+        return response;
     }
 
-    public String get(String path) throws Exception {
+    public Response get(String path) throws Exception {
         return _request("GET", path, null);
     }
 
-    public String post(String path, HashMap<String , Object> parms) {
+    public Response post(String path, HashMap<String , Object> data) throws Exception {
 
         byte[] body = null;
-        String response = null;
         try {
-            body = Json.Stringify(parms).getBytes("UTF-8");
-            response =  _request("POST", path, body);
-        } catch (Exception e) {
-            e.printStackTrace();
+            body = Json.Stringify(data).getBytes("UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new Exception(e, e.getMessage());
         }
-        return response;
+        return _request("POST", path, body);
     }
 
-    public String patch(String path, HashMap<String , Object> parms) {
+    public Response patch(String path, HashMap<String , Object> data) throws Exception {
         byte[] body = null;
-        String response = null;
         try {
-            body = Json.Stringify(parms).getBytes("UTF-8");
-            response =  _request("PATCH", path, body);
-        } catch (Exception e) {
-            e.printStackTrace();
+            body = Json.Stringify(data).getBytes("UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new Exception(e, e.getMessage());
         }
-        return response;
+        return _request("PATCH", path, body);
     }
 
     public String getSessionCookie() {
