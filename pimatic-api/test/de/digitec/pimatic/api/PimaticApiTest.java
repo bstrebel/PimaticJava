@@ -97,6 +97,4 @@ public class PimaticApiTest {
         Response response = client.post("/login", parms);
         Debug.d(tag, response.toString());
     }
-
-
 }
