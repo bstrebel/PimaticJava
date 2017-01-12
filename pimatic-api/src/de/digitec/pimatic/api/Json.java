@@ -10,7 +10,9 @@ import org.json.JSONObject;
 
 import java.util.*;
 
-
+/**
+ * Helper for Android compatible org.json library 20140107
+ */
 public class Json {
 
     public static Object toJSON(Object object) throws JSONException {
